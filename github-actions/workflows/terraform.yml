@@ -1,0 +1,119 @@
+name: deploy-terraform
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "terraform/**"
+  pull_request:
+    paths:
+      - "terraform/**"
+
+jobs:
+  # Create S3 bucket for Terraform State file
+  s3-backend:
+    name: S3 Backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # This is required for actions/checkout
+      id-token: write # This is required for requesting the JWT
+      pull-requests: write
+    environment: main
+    env:
+      # Setting an environment variable with the value of a configuration variable determined by environment
+      account_name: ${{ vars.ACCT_NAME }}
+      account_number: ${{ vars.ACCT_NUM }}
+      working_directory: "terraform/remote_backend"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo "${GITHUB_REF#refs/heads/}")" >> "$GITHUB_OUTPUT"
+        id: extract_branch
+      - uses: dorny/paths-filter@v3
+        name: Filter for changes
+        id: changes
+        with:
+          base: ${{ steps.extract_branch.outputs.branch }}
+          filters: |
+            terraform:
+              - 'terraform/**'
+      - name: Terraform Action
+        if: ${{ steps.changes.outputs.terraform == 'true' }}
+        # Demo, only.
+        # Real path below would be ./.github/actions/terraform
+        uses: ../github/actions/terraform
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          REF: ${{ github.ref }}
+          ACCT_NUM: ${{ env.account_number }}
+          ACCT_NAME: ${{ env.account_name }}
+          WORK_DIR: ${{ env.working_directory }}
+      - name: Render terraform docs and push changes back to PR
+        uses: terraform-docs/gh-actions@v1.0.0
+        with:
+          working-dir: ${{ env.working_directory }}
+          output-file: README.md
+          output-method: inject
+          git-push: "true"
+  # Deploy EKS Cluster
+  terraform:
+    needs: s3-backend
+    name: Terraform
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # This is required for actions/checkout
+      id-token: write # This is required for requesting the JWT
+      pull-requests: write
+    environment: main
+    env:
+      # Setting an environment variable with the value of a configuration variable determined by environment
+      account_name: ${{ vars.ACCT_NAME }}
+      account_number: ${{ vars.ACCT_NUM }}
+      working_directory: "terraform/"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo "${GITHUB_REF#refs/heads/}")" >> "$GITHUB_OUTPUT"
+        id: extract_branch
+      - uses: dorny/paths-filter@v3
+        name: Filter for changes
+        id: changes
+        with:
+          base: ${{ steps.extract_branch.outputs.branch }}
+          filters: |
+            terraform:
+              - 'terraform/**'
+      - name: "Terraform job for Dev branch"
+        if: github.ref == 'refs/heads/dev'
+        # Demo, only.
+        # Real path below would be ./.github/actions/terraform
+        uses: ../github/actions/terraform
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          REF: ${{ github.ref }}
+          AWS_REGION: 'us-east-1'
+          ACCT_NUM: ${{ env.account_number }}
+          ACCT_NAME: ${{ env.account_name }}
+          WORK_DIR: ${{ env.working_directory }}
+      - name: Render terraform docs and push changes back to PR
+        uses: terraform-docs/gh-actions@v1.0.0
+        with:
+          working-dir: ${{ env.working_directory }}
+          output-file: README.md
+          output-method: inject
+          git-push: "true"

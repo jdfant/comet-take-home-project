@@ -1,0 +1,45 @@
+name: helm-action
+description: Configures and deploys Helm
+inputs:
+  GITHUB_TOKEN:
+    description: The github token to use to make commits
+    required: true
+  EVENT_NAME:
+    description: The name of the github event
+    required: true
+  ACTOR:
+    description: The name of whoever triggered the github action
+    required: true
+  REF:
+    description: The name of the Github Commit Reference
+    required: true
+  ACCT_NUM:
+    description: The number of the AWS account
+    required: true
+  ACCT_NAME:
+    description: The name of the AWS account
+    required: true
+  WORK_DIR:
+    description: The helm working directory
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        # POC, only. The real assume-role name is eks generated
+        role-to-assume: "arn:aws:iam::${{ inputs.ACCT_NUM }}:role/${{ inputs.ACCT_NAME }}-github-service-role"
+        aws-region: us-west-2
+
+    - uses: bitovi/github-actions-deploy-eks-helm@v1.2.10
+
+    - name: Helm Deploy
+      id: deploy
+      working-directory: ${{ inputs.WORK_DIR }}
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      shell: bash
+      # The following 'run' command will create the 'jd-helloworld' namespace
+      # then, deploy nginx and postgresql into the 'jd-helloworld' namespace.
+      run: helm install -n jd-helloworld --create-namespace jd-helloworld helloworld
+      continue-on-error: false

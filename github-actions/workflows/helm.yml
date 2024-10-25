@@ -1,0 +1,63 @@
+name: helm-deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "comet-take-home-project/helm/**"
+  pull_request:
+    paths:
+      - "comet-take-home-project/helm/**"
+env:
+  namespace: helloworld
+  cluster: jd-fant-comet-project
+
+jobs:
+  # Deploy Helm Chart
+  helm:
+    name: Deploy Helm Chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # This is required for actions/checkout
+      id-token: write # This is required for requesting the JWT
+      pull-requests: write
+    environment: main
+    env:
+      # Setting an environment variable with the value of a configuration variable determined by environment
+      account_name: ${{ vars.ACCT_NAME }}
+      account_number: ${{ vars.ACCT_NUM }}
+      working_directory: "helm/helloworld/"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo "${GITHUB_REF#refs/heads/}")" >> "$GITHUB_OUTPUT"
+        id: extract_branch
+      - uses: dorny/paths-filter@v3
+        name: Filter for changes
+        id: changes
+        with:
+          base: ${{ steps.extract_branch.outputs.branch }}
+          filters: |
+            helm:
+              - 'helm/**'
+      - name: Deploy Helm
+        if: github.ref == 'refs/heads/dev'
+        # Demo, only.
+        # Real path below would be ./.github/actions/helm
+        uses: ../github-actions/actions/helm
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+          cluster-name: ${{ env.cluster }}
+          config-files: helm/$/values.yaml
+          chart-path: helm/helloworld
+          namespace: ${{ env.namespace }}
+          name: jd-fant-helloworld
