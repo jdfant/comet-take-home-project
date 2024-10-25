@@ -1,0 +1,136 @@
+name: terraform-action
+description: Configures and runs Terraform
+inputs:
+  GITHUB_TOKEN:
+    description: The github token to use to make commits
+    required: true
+  EVENT_NAME:
+    description: The name of the github event
+    required: true
+  ACTOR:
+    description: The name of whoever triggered the github action
+    required: true
+  REF:
+    description: The name of the Github Commit Reference
+    required: true
+  ACCT_NUM:
+    description: The number of the AWS account
+    required: true
+  ACCT_NAME:
+    description: The name of the AWS account
+    required: true
+  WORK_DIR:
+    description: The terraform working directory
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        # POC, only. The real assume-role name is eks generated
+        role-to-assume: "arn:aws:iam::${{ inputs.ACCT_NUM }}:role/${{ inputs.ACCT_NAME }}-github-service-role"
+        aws-region: us-west-2
+
+    - uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.9.0
+
+    - name: Terraform Fmt
+      id: fmt
+      shell: bash
+      working-directory: ${{ inputs.WORK_DIR }}
+      run: terraform fmt
+
+    - name: Auto Commit Changes
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Terraform fmt"
+        file_pattern: "*.tf"
+        commit_user_name: "github-actions[bot]"
+
+    - name: Terraform Init
+      id: init
+      shell: bash
+      working-directory: ${{ inputs.WORK_DIR }}
+      run: terraform init -no-color -input=false
+
+    - name: Terraform Init Status
+      if: steps.init.outcome == 'failure'
+      shell: bash
+      run: exit 1
+
+    - name: Terraform Validate
+      id: validate
+      shell: bash
+      working-directory: ${{ inputs.WORK_DIR }}
+      run: terraform validate -no-color
+
+    - name: Terraform Plan
+      id: plan
+      shell: bash
+      working-directory: ${{ inputs.WORK_DIR }}
+      run: terraform plan -no-color -input=false -detailed-exitcode
+      continue-on-error: true
+
+    - name: Terraform Plan Status
+      if: steps.plan.outcome == 'failure'
+      shell: bash
+      run: exit 1
+
+    - uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      env:
+        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          // 1. Retrieve existing bot comments for the PR
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          })
+          const botComment = comments.find(comment => {
+            return comment.user.type === 'Bot' && comment.body.includes('Terraform Format and Style')
+          })
+          // 2. Prepare format of the comment
+          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+          <details><summary>Validation Output</summary>
+          \`\`\`\n
+          ${{ steps.validate.outputs.stdout }}
+          \`\`\`
+          </details>
+          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+          <details><summary>Show Plan</summary>
+          \`\`\`\n
+          ${process.env.PLAN}
+          \`\`\`
+          </details>
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ inputs.WORK_DIR }}\`, Workflow: \`${{ github.workflow }}\`*`;
+          // 3. If we have a comment, update it, otherwise create a new one
+          if (botComment) {
+            github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: output
+            })
+          } else {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+          }
+
+    - name: Terraform Apply
+      id: apply
+      working-directory: ${{ inputs.WORK_DIR }}
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      shell: bash
+      run: terraform apply -no-color -auto-approve -input=false
+      continue-on-error: true
