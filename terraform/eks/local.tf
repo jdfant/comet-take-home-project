@@ -1,8 +1,6 @@
 locals {
-  region  = "us-west-2"
-  account = "387699453544"
-  #  region  = "REPLACE WITH CORRECT AWS REGION"
-  #account = "REPLACE WITH CORRECT AWS ACCOUNT"
+  region  = "REPLACE WITH CORRECT AWS REGION"
+  account = "REPLACE WITH CORRECT AWS ACCOUNT"
 
   # VPC details
   # Since I have no existing VPC details, it's very possible the cidr below could overlap with other cidrs.
