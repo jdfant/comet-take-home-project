@@ -82,11 +82,11 @@ aws_secret_access_key = XXXXXXXXXXXXXX
 * Once kubenetes access has been established, connect to the postgres pod from the nginx pod.  
 *The postgresql 'helm subchart' is just there to prove postgresql functions and accessible.*
 #### Test that the "Hello World" website has been deployed.
-  * Executing `kubectl get svc -o jsonpath='{.items[*].status.loadBalancer.ingress[0].hostname}` will reveal the 'AWS Ingress URL'.
+  * Executing `kubectl get svc -n jd-helloworld -o jsonpath='{.items[*].status.loadBalancer.ingress[0].hostname}` will reveal the 'AWS Ingress URL'.
     * Open a web browser and go to the URL from the output of the above command. Example `http://my-ingress-1234567890.us-west-2.elb.amazonaws.com`.
     * If the "Hello World" page opens, this test is successful.
 #### Test access to postgresql from the nginx pod:
-  * `kubectl exec -it $(kubectl get pods -o=jsonpath='{range .items..metadata}{.name}{"\n"}{end}' | grep nginx) -- psql -h $(kubectl get services | awk '/postgres/ && FNR == 3 {print $3}') -U testuser -d testdb`
+  * `kubectl exec -n jd-helloworld -it $(kubectl get pods -n jd-helloworld -o=jsonpath='{range .items..metadata}{.name}{"\n"}{end}' | grep nginx) -- psql -h $(kubectl get services -n jd-helloworld | awk '/postgres/ && FNR == 3 {print $3}') -U testuser -d testdb`
   * This will prompt you for a password.  
     * Password is: `testpass`
   * If the above command is successful, you will enter the `postgresql interactive terminal` and will see:
