@@ -1,5 +1,7 @@
 # JD Fant - Comet Project - EKS Cluster
-### This will build a complete AWS EKS cluster with aws managed node groups
+### This will build a complete AWS EKS cluster with aws managed node groups  
+#### *An example terraform "tfstate file" has been included to show the 'terraform plan' output results*
+---
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 

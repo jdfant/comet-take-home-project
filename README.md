@@ -3,7 +3,7 @@
 *This document is designed for minimally technical users who need to perform a Terraform and Helm-based deployment on Amazon EKS leveraging Git Hooks.  
 It provides step-by-step instructions and explanations to ensure users can follow along without requiring prior expertise in AWS cloud infrastructure, Kubernetes, or deployment automation.*  
 
-*Please direct any questions to jd@jdfant.com*
+*Please direct all questions to jd@jdfant.com*
 
 ## Goals
 * Create a new repository with all necessary Infrastructure-as-Code components  
@@ -22,7 +22,7 @@ audience
 ---
 ### *NOTE:* *This code has NOT been deployed to a real account as it would be too expensive for this project*  
 #### *terraform init and plan should complete with zero errors. A successful terraform apply is not guaranteed*  
-#### *The Helm chart has been well tested and will function correctly into a correctly configured local (non-AWS) kubernetes cluster*  
+#### *The Helm chart has been well tested and will function correctly if deployed into a local (non-AWS) kubernetes cluster*  
 ---  
 ## Instructions  
 ### Configure AWS Access
