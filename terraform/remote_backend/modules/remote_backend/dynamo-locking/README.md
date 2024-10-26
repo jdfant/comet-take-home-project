@@ -26,5 +26,5 @@
 
 | Name | Description |
 |------|-------------|
-| <a name="output_dynamodb_table"></a> [dynamodb\_table](#output\_dynamodb\_table) | Name of the DynamaDB table to store Terraform state file. |
+| <a name="output_dynamodb_table"></a> [dynamodb\_table](#output\_dynamodb\_table) | Name of the DynamoDB table to store Terraform state file. |
 <!-- END_TF_DOCS -->
