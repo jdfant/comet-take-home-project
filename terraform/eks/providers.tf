@@ -7,12 +7,12 @@ terraform {
     }
   }
 
-  #  # S3 remote backend w/Dynamodb locking:
-  #  backend "s3" {
-  #    encrypt        = "true"
-  #    bucket         = "remote-backend-jd-comet-tf-project"
-  #    key            = "jd-comet-project/eks-cluster.tfstate"
-  #    dynamodb_table = "jd-comet-tf-project"
-  #    region         = "us-west-2"
-  #  }
+  # S3 remote backend w/Dynamodb locking:
+  backend "s3" {
+    encrypt        = "true"
+    bucket         = "remote-backend-jd-comet-tf-project"
+    key            = "jd-comet-project/eks-cluster.tfstate"
+    dynamodb_table = "jd-comet-tf-project"
+    region         = "us-west-2"
+  }
 }

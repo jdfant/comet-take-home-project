@@ -61,9 +61,9 @@ aws_secret_access_key = XXXXXXXXXXXXXX
     * Replace the `region` and `account` variables to match your AWS environment. Nothing else will need to be changed for this project.
 * Now push the new branch to github create a Pull Request (PR) for this.
    * Execute: `git add -A`, then commit the repo with a note, `git commit -m "fix: updating account and region in local.tf"`
-   * A remote 'dev' branch does not exist, use `git push --set-upstream origin dev` to push the newly commited code to the new 'dev'branch.
+   * A remote 'dev' branch does not exist, use `git push --set-upstream origin dev` to push the newly committed code to the new 'dev' branch.
    * Pushing the dev branch will trigger a `terraform init` and `terraform plan`.
-   * Monitor the github actions 'job' by selecting the `Actions` tab at the top of the page of the `comet-take-home-project` repo. Then select the `Workflow Run` you want to monitor. You will see a graph of individual jobs and their dependancies. To view a job's log, click the job. From there, you can view the output from individual steps.
+   * Monitor the github actions 'job' by selecting the `Actions` tab at the top of the page of the `comet-take-home-project` repo. Then select the `Workflow Run` you want to monitor. You will see a graph of individual jobs and their dependencies. To view a job's log, click the job. From there, you can view the output from individual steps.
 * Once the github actions jobs successfully completes, the Pull Request will be marked as `"Ready for Review"`.
 * When the Pull Request has been approved to merge to the main branch, this triggers the same exact github actions jobs that the initial push to dev performed. Except this time, `terraform apply` will be executed that will initiate building a complete AWS EKS Cluster. In this example, a 'dependent' job will run first that creates an S3 Bucket and DynamoDB tables for storing the terraform state file.  
 *For this project, the state file for this terraform S3/DynamoDB build will be retained in github. This is not ideal nor secure*  
@@ -79,10 +79,10 @@ aws_secret_access_key = XXXXXXXXXXXXXX
 #### Test access to the cluster:
   * `kubectl cluster-info`
     * This should display the addresses of the control plane and other items.
-* Once kubenetes access has been established, connect to the postgres pod from the nginx pod.  
+* Once kubernetes access has been established, connect to the postgres pod from the nginx pod.  
 *The postgresql 'helm subchart' is just there to prove postgresql functions and accessible.*
 #### Test that the "Hello World" website has been deployed.
-  * Executing `kubectl get svc -n jd-helloworld -o jsonpath='{.items[*].status.loadBalancer.ingress[0].hostname}` will reveal the 'AWS Ingress URL'.
+  * Executing `kubectl get service -n jd-helloworld -o jsonpath='{.items[*].status.loadBalancer.ingress[0].hostname}` will reveal the 'AWS Ingress URL'.
     * Open a web browser and go to the URL from the output of the above command. Example `http://my-ingress-1234567890.us-west-2.elb.amazonaws.com`.
     * If the "Hello World" page opens, this test is successful.
 #### Test access to postgresql from the nginx pod:
